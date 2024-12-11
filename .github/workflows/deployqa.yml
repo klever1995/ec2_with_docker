@@ -17,7 +17,7 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: ksrobalino
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
@@ -40,13 +40,13 @@ jobs:
             sudo sh get-docker.sh
 
             # Descargar la imagen desde Docker Hub
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:qa
+            sudo docker pull ksrobalino/my-app:qa
 
             # Detener y eliminar contenedores antiguos
             sudo docker stop my-app || true
             sudo docker rm my-app || true
 
             # Iniciar el nuevo contenedor
-            sudo docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:qa
+            sudo docker run -d --name my-app -p 80:80 ksrobalino/my-app:qa
 
 
