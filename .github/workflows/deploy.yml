@@ -38,9 +38,14 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Instalar Docker si no está disponible
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
+            # Verificar si Docker está instalado
+            if ! [ -x "$(command -v docker)" ]; then
+              echo "Docker no encontrado. Instalando..."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            else
+              echo "Docker ya está instalado."
+            fi
 
             # Descargar la imagen desde Docker Hub
             sudo docker pull ksrobalino/my-app:main
@@ -81,9 +86,14 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Instalar Docker si no está disponible
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
+            # Verificar si Docker está instalado
+            if ! [ -x "$(command -v docker)" ]; then
+              echo "Docker no encontrado. Instalando..."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            else
+              echo "Docker ya está instalado."
+            fi
 
             # Descargar la imagen desde Docker Hub
             sudo docker pull ksrobalino/my-app:main

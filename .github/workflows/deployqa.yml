@@ -35,9 +35,13 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Instalar Docker si no está disponible
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
+            # Verificar si Docker está instalado
+            if ! command -v docker &> /dev/null
+            then
+              echo "Instalando Docker desde los repositorios oficiales..."
+              sudo apt-get update
+              sudo apt-get install -y docker.io
+            fi
 
             # Descargar la imagen desde Docker Hub
             sudo docker pull ksrobalino/my-app:qa
@@ -48,5 +52,3 @@ jobs:
 
             # Iniciar el nuevo contenedor
             sudo docker run -d --name my-app -p 80:80 ksrobalino/my-app:qa
-
-
