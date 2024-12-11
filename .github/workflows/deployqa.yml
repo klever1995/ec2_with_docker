@@ -1,12 +1,4 @@
-name: Deploy to QA with Docker
-
-on:
-  push:
-    branches:
-      - qa
-
-jobs:
-  deploy_qa:
+ deploy_qa:
     name: Deploy to QA with Docker
     runs-on: ubuntu-latest
 
