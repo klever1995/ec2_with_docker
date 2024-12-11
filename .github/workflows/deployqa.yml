@@ -25,8 +25,8 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/myapp:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/myapp:latest
+          docker build -t ksrobalino/dockerec2:v1 .
+          docker push ksrobalino/dockerec2:v1
 
       - name: Deploy to EC2 via Docker (Pull and Run Docker container)
         uses: appleboy/ssh-action@master
@@ -45,10 +45,10 @@ jobs:
             sudo docker rm -f myapp || true
 
             # Elimina cualquier imagen anterior (si existe)
-            sudo docker rmi -f ${{ secrets.DOCKER_USERNAME }}/myapp:latest || true
+            sudo docker rmi -f ksrobalino/dockerec2:v1 || true
 
             # Obtiene la última imagen desde Docker Hub
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/myapp:latest
+            sudo docker pull ksrobalino/dockerec2:v1
 
             # Ejecuta el contenedor
-            sudo docker run -d -p 80:80 --name myapp ${{ secrets.DOCKER_USERNAME }}/myapp:latest
+            sudo docker run -d -p 80:80 --name myapp ksrobalino/dockerec2:v1
