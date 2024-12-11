@@ -38,18 +38,21 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Ensure Docker is installed
-            sudo apt-get update
-            sudo apt-get install -y docker.io
-            sudo systemctl enable docker
-            sudo systemctl start docker
+           # Asegúrate de que Docker esté instalado
+sudo apt-get update
+sudo apt-get install -y docker.io
+sudo systemctl enable docker
+sudo systemctl start docker
 
-            # Pull the new image from DockerHub
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
+# Iniciar sesión en Docker Hub
+sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
-            # Stop and remove the existing container (if running)
-            sudo docker stop my-app-container || true
-            sudo docker rm my-app-container || true
+# Descargar la imagen Docker con un tiempo de espera
+sudo docker pull --timeout=300 ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
 
-            # Run the new container
-            sudo docker run -d --name my-app-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
+# Detener y eliminar cualquier contenedor existente
+sudo docker stop my-app-container || true
+sudo docker rm my-app-container || true
+
+# Ejecutar el nuevo contenedor
+sudo docker run -d --name my-app-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
