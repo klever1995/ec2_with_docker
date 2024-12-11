@@ -1,4 +1,4 @@
-name: SendChanges-to-EC2
+name: SendChanges-to-DockerHub
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to EC2 on qa branch push
+    name: Deploy to DockerHub on qa branch push
     runs-on: ubuntu-latest
 
     steps:
@@ -23,36 +23,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker image
+      - name: Build and push Docker image to DockerHub
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }} .
-
-      - name: Push Docker image to DockerHub
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
-
-      - name: Execute remote ssh commands using ssh key
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST4_DNS }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-           # Asegúrate de que Docker esté instalado
-sudo apt-get update
-sudo apt-get install -y docker.io
-sudo systemctl enable docker
-sudo systemctl start docker
-
-# Iniciar sesión en Docker Hub
-sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-
-# Descargar la imagen Docker con un tiempo de espera
-sudo docker pull --timeout=300 ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
-
-# Detener y eliminar cualquier contenedor existente
-sudo docker stop my-app-container || true
-sudo docker rm my-app-container || true
-
-# Ejecutar el nuevo contenedor
-sudo docker run -d --name my-app-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/myapp:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/myapp:latest
