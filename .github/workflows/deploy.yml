@@ -1,4 +1,4 @@
-name: SendChanges-to-DockerHub
+name: SendChanges-to-EC2
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy:
-    name: Build and Push Docker Image to Docker Hub
+    name: Deploy to Docker Hub and EC2 on main branch push
     runs-on: ubuntu-latest
 
     steps:
@@ -26,26 +26,42 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/dockerec2:v1 .
-          docker push ${{ secrets.DOCKER_USERNAME }}/dockerec2:v1
+          docker build -t ksrobalino/dockerec2:${{ github.sha }} .
+        
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push ksrobalino/dockerec2:${{ github.sha }}
 
-      - name: Deploy to EC2 via Docker (Pull and Run Docker container)
+      - name: Deploy to EC2 Server
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOST_DNS }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+          TARGET: ${{ secrets.TARGET_DIR }}
+
+      - name: Executing remote ssh commands using ssh key
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST_DNS }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Actualiza el sistema
             sudo apt-get -y update
             sudo apt-get install -y docker.io
+
+            # Inicia Docker si no está en ejecución
             sudo systemctl start docker
             sudo systemctl enable docker
 
-            sudo docker rm -f dockerec2 || true
-            sudo docker rmi -f ${{ secrets.DOCKER_USERNAME }}/dockerec2:v1 || true
+            # Pull de la imagen más reciente desde Docker Hub
+            sudo docker pull ksrobalino/dockerec2:${{ github.sha }}
 
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/dockerec2:v1
+            # Detiene y elimina el contenedor anterior si existe
+            sudo docker ps -q -f "name=my_container" | grep -q . && sudo docker stop my_container && sudo docker rm my_container
 
-            sudo docker run -d -p 80:80 --name dockerec2 ${{ secrets.DOCKER_USERNAME }}/dockerec2:v1
+            # Corre la imagen en un contenedor nuevo
+            sudo docker run -d --name my_container -p 80:80 ksrobalino/dockerec2:${{ github.sha }}
