@@ -1,50 +1,55 @@
- deploy_qa:
-    name: Deploy to QA with Docker
+name: SendChanges-to-EC2
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy:
+    name: Deploy to EC2 on qa branch push
     runs-on: ubuntu-latest
 
     steps:
-      # Paso 1: Hacer checkout del código
       - name: Checkout the files
         uses: actions/checkout@v2
 
-      # Paso 2: Iniciar sesión en Docker Hub
-      - name: Log in to Docker Hub
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to DockerHub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}  # Usar el nombre de usuario configurado en los secretos
-          password: ${{ secrets.DOCKER_PASSWORD }}  # Usar el token o contraseña configurados en los secretos
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Paso 3: Construir y subir la imagen Docker
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .  # Directorio donde se encuentra el código fuente y Dockerfile
-          file: ./Dockerfile  # Ubicación del Dockerfile
-          push: true  # Subir la imagen a Docker Hub
-          tags: ${{ secrets.DOCKER_USERNAME }}/my-app:qa  # Etiqueta para la imagen en Docker Hub
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }} .
 
-      # Paso 4: Desplegar en el servidor de QA usando Docker
-      - name: Deploy and run Docker container
+      - name: Push Docker image to DockerHub
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
+
+      - name: Execute remote ssh commands using ssh key
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.HOST_DNS_QA }}  # Dirección DNS del servidor de QA
-          username: ${{ secrets.USERNAME }}  # Nombre de usuario del servidor de QA
-          key: ${{ secrets.EC2_SSH_KEY }}  # Clave SSH para el servidor
+          host: ${{ secrets.HOST4_DNS }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Verificar si Docker está instalado
-            if ! command -v docker &> /dev/null
-            then
-              echo "Instalando Docker desde los repositorios oficiales..."
-              sudo apt-get update
-              sudo apt-get install -y docker.io
-            fi
+            # Ensure Docker is installed
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+            sudo systemctl enable docker
+            sudo systemctl start docker
 
-            # Descargar la imagen desde Docker Hub
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:qa
+            # Pull the new image from DockerHub
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
 
-            # Detener y eliminar contenedores antiguos
-            sudo docker stop my-app || true
-            sudo docker rm my-app || true
+            # Stop and remove the existing container (if running)
+            sudo docker stop my-app-container || true
+            sudo docker rm my-app-container || true
 
-            # Iniciar el nuevo contenedor
-            sudo docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:qa
+            # Run the new container
+            sudo docker run -d --name my-app-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:${{ github.sha }}
