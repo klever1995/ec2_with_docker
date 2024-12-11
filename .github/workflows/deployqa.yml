@@ -36,12 +36,17 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Stop and remove any existing container with sudo
-            sudo docker stop webapp || true
-            sudo docker rm webapp || true
-            
-            # Pull the latest Docker image from Docker Hub with sudo
+            # Ensure Docker is running
+            sudo systemctl start docker || true
+
+            # Stop and remove any existing container
+            if sudo docker ps -q -f name=webapp; then
+              sudo docker stop webapp
+              sudo docker rm webapp
+            fi
+
+            # Pull the latest Docker image
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/webapp:${{ github.sha }}
-            
-            # Run the new Docker container with sudo
+
+            # Run the new Docker container
             sudo docker run -d --name webapp -p 80:80 ${{ secrets.DOCKER_USERNAME }}/webapp:${{ github.sha }}
