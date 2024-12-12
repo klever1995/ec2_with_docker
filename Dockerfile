@@ -1,12 +1,8 @@
-# Usa la imagen oficial de PHP con Apache
-FROM php:8.0-apache
+# Utiliza la imagen oficial de PHP con Apache
+FROM php:7.4-apache
 
-# Copia el código de tu aplicación al contenedor
-COPY . /var/www/html/
+# Copia el código de la aplicación
+COPY index.php /var/www/html/
 
-# Activa el módulo de reescritura de Apache
-RUN a2enmod rewrite
-
-# Expone el puerto 80 para acceder a la aplicación
+# Exponer el puerto 80
 EXPOSE 80
-
